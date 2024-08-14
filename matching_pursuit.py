@@ -37,18 +37,25 @@ def matching_pursuit(input_signal: np.ndarray, expected_signal: np.ndarray, dict
 
 
 # Input signal (a simple sine wave)
-input_signal = np.sin(np.linspace(0, 2 * np.pi, 100))
+# input_signal = np.sin(np.linspace(0, 2 * np.pi, 100))
+input_signal = np.linspace(0, 0, 100) # Straight Signal
 
 # Expected signal
-# expected_signal = np.sin(np.linspace(0, 2 * np.pi, 100)) + 0.2 * np.random.randn(100)
-expected_signal =  np.cos(np.linspace(0, 4 * np.pi, 100)) 
+signal1 = np.sin(np.linspace(0, 2 * np.pi, 100))
+signal2 = np.cos(np.linspace(0, 6 * np.pi, 100))
+signal3 = np.sin(np.linspace(0, 5 * np.pi, 100))
+expected_signal =  signal1 + signal2 + signal3
 
 # Simple dictionary of sine and cosine waves
 dictionary = np.array([
     np.sin(np.linspace(0, 2 * np.pi, 100)),
     np.sin(np.linspace(0, 4 * np.pi, 100)),
+    np.sin(np.linspace(0, 5 * np.pi, 100)),
+    np.sin(np.linspace(0, 6 * np.pi, 100)),
     np.cos(np.linspace(0, 2 * np.pi, 100)),
     np.cos(np.linspace(0, 4 * np.pi, 100)),
+    np.cos(np.linspace(0, 5 * np.pi, 100)),
+    np.cos(np.linspace(0, 6 * np.pi, 100)),
 ])
 
 # Run the matching pursuit algorithm
@@ -62,19 +69,16 @@ plt.figure(figsize=(10, 5))
 
 plt.plot(input_signal, label='Input Signal', color="orange")
 plt.legend()
-plt.title('Input Signal')
 
 plt.plot(expected_signal, label='Expected Signal', color='black', linestyle='dashed')
 plt.legend()
-plt.title('Expected Signal')
 
 plt.plot(required_changes, label='Required Change', color='green', linestyle='dashdot')
 plt.legend()
-plt.title('Required Change to Match Expected Signal')
 
 plt.plot(final_signal, label='Final Signal (Input + Required Change)', color='red', linestyle='dotted')
 plt.legend()
-plt.title('Final Signal (Input + Required Change)')
+plt.title('Matching Pursuit')
 
 # Display the plots
 plt.tight_layout()
