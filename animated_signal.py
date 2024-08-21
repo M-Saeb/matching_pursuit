@@ -3,7 +3,38 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 
-def matching_pursuit(input_signal: np.ndarray, expected_signal: np.ndarray, dictionary: np.ndarray, max_iter: int = 1000, tolerance: float = 1e-6):
+# v v v v SETUP v v v v
+_dictionary = np.array([  # Simple array of sine and cosine waves
+    np.sin(np.linspace(0, 2 * np.pi, 100)),
+    np.sin(np.linspace(0, 4 * np.pi, 100)),
+    np.sin(np.linspace(0, 5 * np.pi, 100)),
+    np.sin(np.linspace(0, 6 * np.pi, 100)),
+    np.sin(np.linspace(0, 8 * np.pi, 100)),
+    np.cos(np.linspace(0, 2 * np.pi, 100)),
+    np.cos(np.linspace(0, 4 * np.pi, 100)),
+    np.cos(np.linspace(0, 5 * np.pi, 100)),
+    np.cos(np.linspace(0, 6 * np.pi, 100)),
+    np.cos(np.linspace(0, 8 * np.pi, 100)),
+])
+
+# Normalizing the dictionary to avoid issues with large or small values
+DICTIONARY = _dictionary / np.linalg.norm(_dictionary, axis=1, keepdims=True)
+
+def generate_combined_random_signal() -> np.ndarray[np.float64]:
+    # combining 4 signals from the dictionary to make one signal
+    return DICTIONARY[random.randint(0, len(DICTIONARY)-1)] + \
+        DICTIONARY[random.randint(0, len(DICTIONARY)-1)] + \
+        DICTIONARY[random.randint(0, len(DICTIONARY)-1)] + \
+        DICTIONARY[random.randint(0, len(DICTIONARY)-1)]
+
+
+def matching_pursuit(
+    input_signal: np.ndarray,
+    expected_signal: np.ndarray,
+    dictionary: np.ndarray,
+    max_iter: int = 1000,
+    tolerance: float = 1e-6
+):
     # Initialize the residual as the difference between expected signal and input signal
     residual = expected_signal - input_signal
     
@@ -36,85 +67,64 @@ def matching_pursuit(input_signal: np.ndarray, expected_signal: np.ndarray, dict
         if np.linalg.norm(residual) < tolerance:
             break
     
-    # Return the output signal, residual, coefficients, and indices
-    return output_signal, residual, coefficients, indices
+    return output_signal, coefficients, indices
 
+# Setup the windows 2 plot figures
+window, (figure1, figure2) = plt.subplots(1, 2, figsize=(14, 5))
 
-# Example usage:
+# this function will run on each iteration of the animation
+def animation_plot(iteration_number):
 
-# Input signal (a simple sine wave)
-input_signal = np.linspace(0, 0, 100)
-# input_signal = np.sin(np.linspace(0, 2 * np.pi, 100))
-
-
-# Simple dictionary of sine and cosine waves
-dictionary = np.array([
-    np.sin(np.linspace(0, 2 * np.pi, 100)),
-    np.sin(np.linspace(0, 4 * np.pi, 100)),
-    np.sin(np.linspace(0, 5 * np.pi, 100)),
-    np.sin(np.linspace(0, 6 * np.pi, 100)),
-    np.cos(np.linspace(0, 2 * np.pi, 100)),
-    np.cos(np.linspace(0, 4 * np.pi, 100)),
-    np.cos(np.linspace(0, 5 * np.pi, 100)),
-    np.cos(np.linspace(0, 6 * np.pi, 100)),
-])
-
-# Expected signal (a sine wave with some added noise)
-expected_signal = dictionary[random.randint(0, len(dictionary-1))] + \
-                dictionary[random.randint(0, len(dictionary-1))] + \
-                dictionary[random.randint(0, len(dictionary-1))] + \
-                dictionary[random.randint(0, len(dictionary-1))]
-
-# Normalize the dictionary to avoid issues with large or small values
-dictionary = dictionary / np.linalg.norm(dictionary, axis=1, keepdims=True)
-
-# Run the matching pursuit algorithm
-required_changes, _, coefficients, indices = matching_pursuit(
-    input_signal, expected_signal, dictionary,
-    max_iter=100
-)
-
-output_signal = input_signal + required_changes
-
-
-def animate(i):
     # Clear previous plots
-    ax1.clear()
-    ax2.clear()
+    figure1.clear()
+    figure2.clear()
     
     # Use the output_signal from matching_pursuit to ensure consistency
     current_applied_changes = np.zeros_like(input_signal)
     
     # Accumulate the reconstructed signal only up to the current iteration `i`
-    for j in range(i):
-        current_applied_changes += coefficients[j] * dictionary[indices[j]]
+    for j in range(iteration_number):
+        current_applied_changes += coefficients[j] * DICTIONARY[indices[j]]
     
     current_signal = input_signal + current_applied_changes  # Accumulate the reconstructed signal
     
-    ax1.plot(current_signal, color='orange', linestyle='dashed', label='Reconstructed Signal')
-    ax1.plot(input_signal, color='red', label='Input Signal')
-    ax1.plot(expected_signal, color='blue', linestyle='dotted', label='Expected Signal')
-    ax1.set_xlim([0, len(input_signal)])
-    ax1.set_ylim([min(expected_signal)-1, max(expected_signal)+1])
-    ax1.set_title("Reconstructed Signal after {} Iterations".format(i))
-    ax1.legend()
+    figure1.plot(current_signal, color='orange', linestyle='dashed', label='Reconstructed Signal')
+    figure1.plot(input_signal, color='grey', label='Input Signal')
+    figure1.plot(expected_signal, color='blue', linestyle='dotted', label='Expected Signal')
+    figure1.set_xlim([0, len(input_signal)])
+    figure1.set_ylim([min(expected_signal)-1, max(expected_signal)+1])
+    figure1.set_title("Reconstructed Signal after {} Iterations".format(iteration_number))
+    figure1.legend()
     
 
-    # ax2.stem([X-AXIS], [Y-AXIS])
-    # ax2.stem([1, 2], [1, 1], 'purple', markerfmt='o', basefmt=' ')
-    ax2.stem(indices[:i+1], coefficients[:i+1], linefmt='purple', markerfmt='x', basefmt=' ')
-    ax2.set_xlim([0, len(dictionary)])
-    # ax2.set_ylim([-1, 1])
-    ax2.set_title("Coefficients after {} Iterations".format(i))
-    ax2.set_xlabel("Element of the basis")
-    ax2.set_ylabel("Coefficient")
+    figure2.stem(
+        indices[:iteration_number+1], # [X-AXIS]
+        coefficients[:iteration_number+1], # [Y-AXIS]
+        linefmt='purple', markerfmt='x', basefmt=' '
+    )
+    figure2.set_xlim([0, len(DICTIONARY)])
+    figure2.set_title("Coefficients after {} Iterations".format(iteration_number))
+    figure2.set_xlabel("Element of the basis")
+    figure2.set_ylabel("Coefficient")
+# ^ ^ ^ ^ SETUP ^ ^ ^ ^
 
 
-# Setup the figure and subplots
-fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 5))
+# v v v v IMPLEMNTATION v v v v
+input_signal = np.linspace(0, 0, 100) # simple straight line
+expected_signal = generate_combined_random_signal()
+
+# Run the matching pursuit algorithm
+_, coefficients, indices = matching_pursuit(
+    input_signal, expected_signal, DICTIONARY,
+    max_iter=101
+)
 
 # Create animation
-ani = FuncAnimation(fig, animate, frames=len(coefficients), interval=500, repeat=False)
-
-# Save or display the animation
-plt.show()
+animate = FuncAnimation(
+    window,
+    animation_plot,
+    frames=len(coefficients),
+    interval=500, repeat=False
+)
+plt.show() # keep the plot open
+# ^ ^ ^ ^ IMPLEMNTATION ^ ^ ^ ^
