@@ -1,3 +1,4 @@
+import random
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
@@ -42,17 +43,9 @@ def matching_pursuit(input_signal: np.ndarray, expected_signal: np.ndarray, dict
 # Example usage:
 
 # Input signal (a simple sine wave)
-input_signal = np.sin(np.linspace(0, 2 * np.pi, 100))
-# input_signal = np.linspace(0, 0, 100)
+input_signal = np.linspace(0, 0, 100)
+# input_signal = np.sin(np.linspace(0, 2 * np.pi, 100))
 
-signal1 = np.sin(np.linspace(0, 2 * np.pi, 100))
-signal2 = np.cos(np.linspace(0, 6 * np.pi, 100))
-signal3 = np.sin(np.linspace(0, 5 * np.pi, 100))
-
-combined_signal = signal1 + signal2 + signal3
-
-# Expected signal (a sine wave with some added noise)
-expected_signal = combined_signal
 
 # Simple dictionary of sine and cosine waves
 dictionary = np.array([
@@ -65,17 +58,24 @@ dictionary = np.array([
     np.cos(np.linspace(0, 5 * np.pi, 100)),
     np.cos(np.linspace(0, 6 * np.pi, 100)),
 ])
+
+# Expected signal (a sine wave with some added noise)
+expected_signal = dictionary[random.randint(0, len(dictionary-1))] + \
+                dictionary[random.randint(0, len(dictionary-1))] + \
+                dictionary[random.randint(0, len(dictionary-1))] + \
+                dictionary[random.randint(0, len(dictionary-1))]
+
 # Normalize the dictionary to avoid issues with large or small values
 dictionary = dictionary / np.linalg.norm(dictionary, axis=1, keepdims=True)
 
-
-
 # Run the matching pursuit algorithm
 required_changes, _, coefficients, indices = matching_pursuit(
-    input_signal, expected_signal, dictionary
+    input_signal, expected_signal, dictionary,
+    max_iter=100
 )
 
 output_signal = input_signal + required_changes
+
 
 def animate(i):
     # Clear previous plots
@@ -86,12 +86,12 @@ def animate(i):
     current_applied_changes = np.zeros_like(input_signal)
     
     # Accumulate the reconstructed signal only up to the current iteration `i`
-    for j in range(i+1):
+    for j in range(i):
         current_applied_changes += coefficients[j] * dictionary[indices[j]]
     
     current_signal = input_signal + current_applied_changes  # Accumulate the reconstructed signal
     
-    ax1.plot(current_signal, color='black', linestyle='dashed', label='Reconstructed Signal')
+    ax1.plot(current_signal, color='orange', linestyle='dashed', label='Reconstructed Signal')
     ax1.plot(input_signal, color='red', label='Input Signal')
     ax1.plot(expected_signal, color='blue', linestyle='dotted', label='Expected Signal')
     ax1.set_xlim([0, len(input_signal)])
@@ -99,24 +99,22 @@ def animate(i):
     ax1.set_title("Reconstructed Signal after {} Iterations".format(i))
     ax1.legend()
     
-    # Plot coefficients
-    ax2.stem(indices[:i+1], coefficients[:i+1], linefmt='purple', markerfmt='o', basefmt=' ')
+
+    # ax2.stem([X-AXIS], [Y-AXIS])
+    # ax2.stem([1, 2], [1, 1], 'purple', markerfmt='o', basefmt=' ')
+    ax2.stem(indices[:i+1], coefficients[:i+1], linefmt='purple', markerfmt='x', basefmt=' ')
     ax2.set_xlim([0, len(dictionary)])
-    ax2.set_ylim([-1, 1])
+    # ax2.set_ylim([-1, 1])
     ax2.set_title("Coefficients after {} Iterations".format(i))
     ax2.set_xlabel("Element of the basis")
     ax2.set_ylabel("Coefficient")
-
-# Other parts of the code remain unchanged
 
 
 # Setup the figure and subplots
 fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 5))
 
 # Create animation
-ani = FuncAnimation(fig, animate, frames=len(coefficients), interval=1, repeat=False)
+ani = FuncAnimation(fig, animate, frames=len(coefficients), interval=500, repeat=False)
 
 # Save or display the animation
 plt.show()
-
-
